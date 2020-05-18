@@ -201,8 +201,6 @@ func Encrypt(src []byte, out string) (err error) {
 		return
 	}
 
-	println(string(key))
-
 	c, err := aes.NewCipher(key)
 	if err != nil {
 		return
@@ -246,8 +244,6 @@ func Decrypt(src []byte, out string) (err error) {
 		return
 	}
 
-	println(string(key))
-
 	c, err := aes.NewCipher(key)
 	if err != nil {
 		return
@@ -270,9 +266,11 @@ func Decrypt(src []byte, out string) (err error) {
 		return
 	}
 
-	fmt.Println(string(plaintext))
-
-	ioutil.WriteFile(out, plaintext, 0755)
+	if len(out) == 0 {
+		fmt.Println(string(plaintext))
+	} else {
+		ioutil.WriteFile(out, plaintext, 0755)
+	}
 
 	return
 }

@@ -13,7 +13,7 @@ import (
 var (
 	initFlag = flag.BoolP("init", "i", false, "Generate a new security key.")
 	encFlag  = flag.StringP("action", "a", "", "Instructs kryptr on what to do with the input.  Acceptable values are  'encrypt' or 'decrypt'.")
-	outFlag  = flag.StringP("out", "o", "./kryptor.enc", "The name of the output file to create.")
+	outFlag  = flag.StringP("out", "o", "", "The name of the output file to create.")
 	recFlag  = flag.StringP("rpwd", "r", "", "Allows the passing in of a password to recover files that were ecrypted with an older security key.")
 
 	// Version is the current version of the application.
@@ -65,7 +65,7 @@ func initialize() {
 		yellow := color.New(color.FgYellow, color.Bold)
 
 		red.Println(warning)
-		fmt.Print("\nUnless you have the recovery key saved somewhere else, all currently encrypted files will be unrecoverable!\nAre you sure you want to do this? (YES | no)> ")
+		fmt.Print("\nUnless you have the recovery password saved somewhere else, all currently encrypted files will be unrecoverable!\nAre you sure you want to do this? (YES | no)> ")
 		var r string
 		_, err := fmt.Scanln(&r)
 		checkForErr(err)
@@ -78,9 +78,9 @@ func initialize() {
 		rpwd, err := kryptomotron.NewKeys()
 		checkForErr(err)
 
-		fmt.Print("Your recovery password for the new security key is: ")
+		fmt.Print("\nYour recovery password for the new security key is: ")
 		yellow.Println(rpwd)
-		fmt.Println("Save this key somewhere safe!  If you loose this key and run kryptr -i again, you will not be able to recover previously encrypted files!")
+		fmt.Printf("Save this recovery password somewhere safe!  If you loose this password and run kryptr -i again, you will not be able to recover previously encrypted files!\n")
 		os.Exit(0)
 	}
 }
