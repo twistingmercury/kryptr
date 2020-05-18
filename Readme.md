@@ -1,6 +1,6 @@
 # kryptr...
 
-...is a file encryption tool that I use to protect sensitive documents.  Sure, there are other apps for password management, but I wanted to create my own.  It is also an exercise for me to explore Go's crypto packages.
+...is a file encryption tool that I use to protect sensitive documents.  It is also a pretext for me to explore Go's crypto packages, using asymmetric cryptographic algorithm (RSA) and symetric algortithms (AES).
 
 ## Using kryptr
 
