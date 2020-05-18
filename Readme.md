@@ -1,6 +1,6 @@
 # kryptr...
 
-...is a file encryption tool that I use to protect sensitive documents.  It is also a pretext for me to explore Go's crypto packages, using asymmetric cryptographic algorithm (RSA) and symetric algortithms (AES).
+...is a file encryption tool that I use to protect sensitive documents.  It is also a pretext for me to explore Go's crypto packages, using asymmetric cryptographic algorithms (RSA) and symetric algortithms (AES).
 
 ## Using kryptr
 
