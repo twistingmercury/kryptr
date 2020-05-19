@@ -30,9 +30,13 @@ release:
 	go get -v ./... 
 	GOOS=darwin GOARCH=amd64 go build -v -ldflags="-X 'main.Version=$(VERSION)' -X 'main.Date=$(DATE)'" -o ./_publish/darwin/$(NAME)
 	GOOS=linux GOARCH=amd64 go build -v -ldflags="-X 'main.Version=$(VERSION)' -X 'main.Date=$(DATE)'" -o ./_publish/linux/$(NAME)
+	GOOS=windows GOARCH=amd64 go build -v -ldflags="-X 'main.Version=$(VERSION)' -X 'main.Date=$(DATE)'" -o ./_publish/windows/$(NAME).exe
 
 install-mac: release
 	mv ./_publish/darwin/$(NAME) /usr/local/bin/$(NAME)
 
 install-linux: release
+	mv ./_publish/linux/$(NAME) /usr/local/bin/$(NAME)
+
+install-windows: release
 	mv ./_publish/linux/$(NAME) /usr/local/bin/$(NAME)
