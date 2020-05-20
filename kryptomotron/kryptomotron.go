@@ -191,8 +191,8 @@ func bytesToPK(bits []byte) (*rsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
-func getCipher() (nonce []byte, gcm cipher.AEAD, err error) {
-	key, err := getKey()
+func getCipher(key []byte) (nonce []byte, gcm cipher.AEAD, err error) {
+	// key, err := getKey()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -211,9 +211,13 @@ func getCipher() (nonce []byte, gcm cipher.AEAD, err error) {
 	return
 }
 
-// Encrypt does what its name implies.
-func Encrypt(src []byte, out string) (err error) {
-	nonce, gcm, err := getCipher()
+func encrypt(src []byte, out string) (err error) {
+	key, err := getKey()
+	if err != nil {
+		return
+	}
+
+	nonce, gcm, err := getCipher(key)
 	if err != nil {
 		return
 	}
@@ -226,15 +230,19 @@ func Encrypt(src []byte, out string) (err error) {
 	return ioutil.WriteFile(fmt.Sprintf("%s", out), b64crypt, 0755)
 }
 
-// Decrypt does what its name implies.
-func Decrypt(src []byte, out string) (err error) {
+func decrypt(src []byte, out string) (err error) {
 	crypt := make([]byte, base64.RawStdEncoding.DecodedLen(len(src)))
 	_, err = base64.RawStdEncoding.Decode(crypt, src)
 	if err != nil {
 		return
 	}
 
-	nonce, gcm, err := getCipher()
+	key, err := getKey()
+	if err != nil {
+		return
+	}
+
+	nonce, gcm, err := getCipher(key)
 	if err != nil {
 		return
 	}
@@ -257,38 +265,82 @@ func Decrypt(src []byte, out string) (err error) {
 }
 
 // Kryptomogrify performs the work desired upon the input file.
-func Kryptomogrify(in, out string, encrypt, decrypt bool) (err error) {
-	if len(in) == 0 {
-		return errors.New("input file name is required")
-	}
+func Kryptomogrify(in, out string, enc, dec bool) (err error) {
+	src, err := read(in)
 
-	_, err = os.Stat(in)
 	if err != nil {
 		return
-	}
-
-	bits, err := ioutil.ReadFile(in)
-	if err != nil {
-		return
-	}
-
-	if bits == nil || len(bits) == 0 {
-		return errors.New("input file target is empty or nil")
 	}
 
 	switch {
-	case (encrypt && decrypt) || (!encrypt && !decrypt):
+	case (enc && dec) || (!enc && !dec):
 		err = errors.New("the encrypt flag and decrypt flag are mutually exclusive")
-	case encrypt:
-		err = Encrypt(bits, out)
+	case enc:
+		err = encrypt(src, out)
 		if err != nil {
 			return
 		}
-	case decrypt:
-		err = Decrypt(bits, out)
+	case dec:
+		err = decrypt(src, out)
 	default:
 		flag.Usage()
 	}
 
 	return
+}
+
+// Recover allows one to recover a file encrypted with an older pwd.
+func Recover(in, out, pwd string) (err error) {
+	src, err := read(in)
+	if err != nil {
+		return
+	}
+
+	if src == nil || len(src) == 0 {
+		return errors.New("input file target is empty or nil")
+	}
+
+	crypt := make([]byte, base64.RawStdEncoding.DecodedLen(len(src)))
+	_, err = base64.RawStdEncoding.Decode(crypt, src)
+	if err != nil {
+		return
+	}
+
+	nonce, gcm, err := getCipher([]byte(pwd))
+	if err != nil {
+		return
+	}
+
+	nonceSize := gcm.NonceSize()
+	nonce, crypt = crypt[:nonceSize], crypt[nonceSize:]
+
+	plaintext, err := gcm.Open(nil, nonce, crypt, nil)
+	if err != nil {
+		return
+	}
+
+	return ioutil.WriteFile(out, plaintext, 0755)
+}
+
+func read(in string) (src []byte, err error) {
+	if len(in) == 0 {
+		err = errors.New("input file name is required")
+		return
+	}
+	_, err = os.Stat(in)
+	if err != nil {
+		return
+	}
+
+	src, err = ioutil.ReadFile(in)
+	if err != nil {
+		return
+	}
+
+	if src == nil || len(src) == 0 {
+		err = errors.New("input file target is empty or nil")
+		return
+	}
+
+	return src, nil
 }

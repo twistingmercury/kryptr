@@ -8,10 +8,10 @@
 
 When first lauching krytpr, you need to initialize it so it can create a unique encryption key.  The key itself is protected by an RSA key pair that is also generated and used to protect the configuration (which at this time only contains the file encryption key).
 
-Do this by running the command `kryptr --init`
+Do this by running the command `kryptr --set-keys`
 
 ```
-$ kryptr -i
+$ kryptr --set-keys
 
 >>>>>>>>>>>>>>>>>>>>>>>>>>*<<<<<<<<<<<<<<<<<<<<<<<<<<
  _    _   ___  ______  _   _  _____  _   _  _____  _
@@ -32,16 +32,20 @@ Save this recovery password somewhere safe!  If you loose this password and run 
 $
 ```
 
-You can run the init as many times as you want.  Just remember that you need to save the recovery password if you happen to reinitialize kryptr.
+You can run the init as many times as you want.  Just remember that you need to save the recovery password if you need to reinitialize kryptr.
 
 ### Encrypt a File
 
-To encrypt a file, you simply pipe in the file path, set the action flag to `encrypt`, and provide an output file path and name: `cat some-file.txt | kryptr -a=encrypt -o=some/directory/filename`
+To encrypt a file, you simply pipe in the file path, set the action flag to `--encrypt`, and provide an output file path and name: `kryptr --in=pirate.txt -o=pirate.x --encrypt`
 
 ### Decrypt a File
 
-To decrypt a file, you pipe in the file to be decrypted, set the action to `decrypt`, and provide the output file path and name: `cat some-encrpyted-file | kryptr -a=decrypt -o=some/directory/filename`
+To decrypt a file, you pipe in the file to be decrypted, set the action to `decrypt`, and provide the output file path and name: `kryptr --in=pirate.x --out=pirate2.txt --decrypt`
 
 ### Decrypt to Console Only
 
-Sometimes you need to decrypt a file to get a value, or some information, but you don't want to save the decrypted text to a file.  To decrypt a file only to the console, simply omit the -o flag: `cat some-encrpyted-file | kryptr -a=decrypt`
+Sometimes you need to decrypt a file to get a value, or some information, but you don't want to save the decrypted text to a file.  To decrypt a file only to the console, simply omit the -o flag: `kryptr --in=pirate.x --decrypt`
+
+### Recover a File Encrypted with an Security Key
+
+As long as you have saved the recovery password you can decrypt a file that was encrypted before the security keys were changed: `kryptr --in=test.enc --out=test.txt --password='[recovery password]'`

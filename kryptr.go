@@ -23,36 +23,49 @@ var (
 	inflag   = flag.StringP("in", "i", "", "The name of the file to be acted upon.")
 	delflag  = flag.BoolP("del-in-file", "d", true, "Deletes the original file that was encrypted.")
 	helpflag = flag.BoolP("help", "h", false, "Displays help information.")
-	recflag  = flag.StringP("recover", "r", "", "Allows the passing in of a password to recover files that were ecrypted with an older security key.")
+	recflag  = flag.String("password", "", "Allows the passing in of a password to recover files that were ecrypted with an older security key.")
+)
+
+var (
+	red    = color.New(color.FgRed, color.Bold)
+	yellow = color.New(color.FgYellow, color.Bold)
 )
 
 func main() {
 	flag.Parse()
-	help()
+	checkHelp()
 	checkVer()
 	setup()
 	in, out := strings.TrimSpace(*inflag), strings.TrimSpace(*outflag)
-	checkErr(kryptomotron.Kryptomogrify(in, out, *encflag, *decflag))
+
+	rpwd := *recflag
+	if len(rpwd) > 0 {
+		checkErr(kryptomotron.Recover(in, out, rpwd))
+	} else {
+		checkErr(kryptomotron.Kryptomogrify(in, out, *encflag, *decflag))
+	}
 
 	if *delflag && *encflag {
 		checkErr(os.Remove(in))
 	}
 }
 
-func help() {
-	if *helpflag {
+func checkHelp() {
+	if *helpflag || len(os.Args) == 1 {
+		ver()
 		flag.Usage()
 		os.Exit(0)
 	}
+}
+
+func help() {
+	flag.Usage()
 }
 
 func setup() {
 	if !*keyflag {
 		return
 	}
-
-	red := color.New(color.FgRed, color.Bold)
-	yellow := color.New(color.FgYellow, color.Bold)
 
 	red.Println(warning)
 	fmt.Print("\nUnless you have the recovery password saved somewhere else, all currently encrypted files will be unrecoverable!\nAre you sure you want to do this? (YES | no)> ")
@@ -79,18 +92,22 @@ func setup() {
 
 func checkVer() {
 	if len(os.Args) > 1 && os.Args[1] == "version" {
-		color.Cyan(kryptr)
-		println(" - Version:    ", Version)
-		println(" - Build Date: ", Date)
+		ver()
 		os.Exit(0)
 	}
 }
 
+func ver() {
+	color.Cyan(kryptr)
+	println(" - Version:    ", Version)
+	println(" - Build Date: ", Date)
+}
+
 func checkErr(err error) {
-	if err != nil {
-		println(err.Error())
-		println("kryptr -a=encrypt -i=some/file/path -o=output/file/path")
-		flag.Usage()
-		os.Exit(1)
+	if err == nil {
+		return
 	}
+	red.Println("Error:", err.Error())
+	help()
+	os.Exit(1)
 }
