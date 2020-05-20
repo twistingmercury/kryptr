@@ -10,14 +10,6 @@ clean:
 
 build: clean
 	go get -v ./...
-	go build -v -ldflags="-X 'main.Version=$(VERSION)' -X 'main.Date=$(DATE)'" -o ./_bin/$(NAME)
-
-
-run: build
-	./_bin/$(NAME)
-
-sec: 
-	./_bin/$(NAME)
 
 test:
 	go test -v ./... -coverprofile=coverage.out
@@ -39,4 +31,4 @@ install-linux: release
 	mv ./_publish/linux/$(NAME) /usr/local/bin/$(NAME)
 
 install-windows: release
-	mv ./_publish/linux/$(NAME) /usr/local/bin/$(NAME)
+	mv ./_publish/windows/$(NAME) /usr/local/bin/$(NAME)

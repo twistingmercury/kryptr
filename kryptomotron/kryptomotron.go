@@ -10,6 +10,7 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"errors"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -190,28 +191,29 @@ func bytesToPK(bits []byte) (*rsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
-// Encrypt encrypts the bytes.
-func Encrypt(src []byte, out string) (err error) {
-	if src == nil || len(src) == 0 {
-		return errors.New("encrypt target is empty or nil")
-	}
-
+func getCipher() (nonce []byte, gcm cipher.AEAD, err error) {
 	key, err := getKey()
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 
-	c, err := aes.NewCipher(key)
+	block, err := aes.NewCipher(key)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 
-	gcm, err := cipher.NewGCM(c)
+	gcm, err = cipher.NewGCM(block)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 
-	nonce := make([]byte, gcm.NonceSize())
+	nonce = make([]byte, gcm.NonceSize())
+	return
+}
+
+// Encrypt does what its name implies.
+func Encrypt(src []byte, out string) (err error) {
+	nonce, gcm, err := getCipher()
 	if err != nil {
 		return
 	}
@@ -221,45 +223,24 @@ func Encrypt(src []byte, out string) (err error) {
 
 	base64.RawStdEncoding.Encode(b64crypt, crypt)
 
-	ioutil.WriteFile(fmt.Sprintf("%s", out), b64crypt, 0755)
-
-	return
+	return ioutil.WriteFile(fmt.Sprintf("%s", out), b64crypt, 0755)
 }
 
-// Decrypt decrypts the bytes.
+// Decrypt does what its name implies.
 func Decrypt(src []byte, out string) (err error) {
-
-	if src == nil || len(src) == 0 {
-		return errors.New("decryption target is empty or nil")
-	}
-
 	crypt := make([]byte, base64.RawStdEncoding.DecodedLen(len(src)))
 	_, err = base64.RawStdEncoding.Decode(crypt, src)
 	if err != nil {
 		return
 	}
 
-	key, err := getKey()
-	if err != nil {
-		return
-	}
-
-	c, err := aes.NewCipher(key)
-	if err != nil {
-		return
-	}
-
-	gcm, err := cipher.NewGCM(c)
+	nonce, gcm, err := getCipher()
 	if err != nil {
 		return
 	}
 
 	nonceSize := gcm.NonceSize()
-	if len(crypt) < nonceSize {
-		return fmt.Errorf("nonceSize > src")
-	}
-
-	nonce, crypt := crypt[:nonceSize], crypt[nonceSize:]
+	nonce, crypt = crypt[:nonceSize], crypt[nonceSize:]
 
 	plaintext, err := gcm.Open(nil, nonce, crypt, nil)
 	if err != nil {
@@ -270,6 +251,44 @@ func Decrypt(src []byte, out string) (err error) {
 		fmt.Println(string(plaintext))
 	} else {
 		ioutil.WriteFile(out, plaintext, 0755)
+	}
+
+	return
+}
+
+// Kryptomogrefy performs the work desired upon the input file.
+func Kryptomogrefy(in, out string, encrypt, decrypt bool) (err error) {
+	if len(in) == 0 {
+		return errors.New("input file name is required")
+	}
+
+	_, err = os.Stat(in)
+	if err != nil {
+		return
+	}
+
+	bits, err := ioutil.ReadFile(in)
+	if err != nil {
+		return
+	}
+
+	if bits == nil || len(bits) == 0 {
+		return errors.New("input file target is empty or nil")
+	}
+
+	switch {
+	case (encrypt && decrypt) || (!encrypt && !decrypt):
+		err = errors.New("the encrypt flag and decrypt flag are mutually exclusive")
+	case encrypt:
+		err = Encrypt(bits, out)
+		if err != nil {
+			return
+		}
+		err = os.Remove(in)
+	case decrypt:
+		err = Decrypt(bits, out)
+	default:
+		flag.Usage()
 	}
 
 	return
