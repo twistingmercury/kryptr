@@ -31,6 +31,8 @@ var (
 	yellow = color.New(color.FgYellow, color.Bold)
 )
 
+const encodeStd = "0123456789+!@#$%^&*+?:|ABCDEHMNPQRSTUVWXYZacdeifklmnopqrstuvwxyz"
+
 func main() {
 	flag.Parse()
 	checkHelp()
