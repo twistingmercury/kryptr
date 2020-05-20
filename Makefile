@@ -10,6 +10,7 @@ clean:
 
 build: clean
 	go get -v ./...
+	go build -v -ldflags="-X 'main.Version=$(VERSION)' -X 'main.Date=$(DATE)'" -o ./_bin/$(NAME)
 
 test:
 	go test -v ./... -coverprofile=coverage.out
