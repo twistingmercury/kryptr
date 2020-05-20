@@ -256,8 +256,8 @@ func Decrypt(src []byte, out string) (err error) {
 	return
 }
 
-// Kryptomogrefy performs the work desired upon the input file.
-func Kryptomogrefy(in, out string, encrypt, decrypt bool) (err error) {
+// Kryptomogrify performs the work desired upon the input file.
+func Kryptomogrify(in, out string, encrypt, decrypt bool) (err error) {
 	if len(in) == 0 {
 		return errors.New("input file name is required")
 	}
@@ -284,7 +284,6 @@ func Kryptomogrefy(in, out string, encrypt, decrypt bool) (err error) {
 		if err != nil {
 			return
 		}
-		err = os.Remove(in)
 	case decrypt:
 		err = Decrypt(bits, out)
 	default:

@@ -20,10 +20,10 @@ var (
 	encflag  = flag.Bool("encrypt", false, "Encrypt the specified file.")
 	decflag  = flag.Bool("decrypt", false, "Decrypt the specified file.")
 	outflag  = flag.StringP("out", "o", "", "The name of the output file to create.")
-	inflag   = flag.StringP("target", "i", "", "The name of the file to be acted upon.")
+	inflag   = flag.StringP("in", "i", "", "The name of the file to be acted upon.")
 	delflag  = flag.BoolP("del-in-file", "d", true, "Deletes the original file that was encrypted.")
 	helpflag = flag.BoolP("help", "h", false, "Displays help information.")
-	//recflag  = flag.StringP("rpwd", "r", "", "Allows the passing in of a password to recover files that were ecrypted with an older security key.")
+	recflag  = flag.StringP("recover", "r", "", "Allows the passing in of a password to recover files that were ecrypted with an older security key.")
 )
 
 func main() {
@@ -32,7 +32,11 @@ func main() {
 	checkVer()
 	setup()
 	in, out := strings.TrimSpace(*inflag), strings.TrimSpace(*outflag)
-	checkErr(kryptomotron.Kryptomogrefy(in, out, *encflag, *decflag))
+	checkErr(kryptomotron.Kryptomogrify(in, out, *encflag, *decflag))
+
+	if *delflag && *encflag {
+		checkErr(os.Remove(in))
+	}
 }
 
 func help() {
