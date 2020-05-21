@@ -127,7 +127,7 @@ func Kryptomogrify(in, out string, enc, dec bool) (err error) {
 }
 
 // Recover allows one to recover a file encrypted with an older pwd.
-func Recover(in, out, pwd string) (err error) {
+func Recover(in, out, r string) (err error) {
 	src, err := read(in)
 	if err != nil {
 		return
@@ -137,19 +137,15 @@ func Recover(in, out, pwd string) (err error) {
 		return errors.New("input file target is empty or nil")
 	}
 
-	crypt := make([]byte, base64.RawStdEncoding.DecodedLen(len(src)))
-	_, err = base64.RawStdEncoding.Decode(crypt, src)
-	if err != nil {
-		return
-	}
+	pwd, err := getPwd([]byte(r))
 
-	nonce, gcm, err := getCipher([]byte(pwd))
+	nonce, gcm, err := getCipher(pwd)
 	if err != nil {
 		return
 	}
 
 	nonceSize := gcm.NonceSize()
-	nonce, crypt = crypt[:nonceSize], crypt[nonceSize:]
+	nonce, crypt := src[:nonceSize], src[nonceSize:]
 
 	plaintext, err := gcm.Open(nil, nonce, crypt, nil)
 	if err != nil {
@@ -195,37 +191,6 @@ func getConfigPath() (p *string, err error) {
 	return
 }
 
-func getSalt() (salt []byte, err error) {
-	root, err := getConfigPath()
-	if err != nil {
-		return
-	}
-
-	ePath := path.Join(*root, encKey)
-	buf, err := ioutil.ReadFile(ePath)
-	if err != nil {
-		return
-	}
-
-	pwdc, err := base64.StdEncoding.DecodeString(string(buf))
-	if err != nil {
-		return
-	}
-
-	pkPath := path.Join(*root, prvKey)
-	bits, err := ioutil.ReadFile(pkPath)
-	if err != nil {
-		return
-	}
-
-	pk, err := bytesToPK(bits)
-	if err != nil {
-		return
-	}
-
-	return rsa.DecryptOAEP(sha512.New(), rand.Reader, pk, pwdc, nil)
-}
-
 func bytesToPK(bits []byte) (*rsa.PrivateKey, error) {
 	var err error
 
@@ -268,7 +233,7 @@ func getCipher(key []byte) (nonce []byte, gcm cipher.AEAD, err error) {
 }
 
 func encrypt(src []byte, out string) (err error) {
-	pwd, err := getPwd()
+	pwd, err := getPwd(nil)
 
 	if len(pwd) != 32 {
 		return fmt.Errorf("invalid key length: %d", len(pwd))
@@ -289,7 +254,7 @@ func encrypt(src []byte, out string) (err error) {
 }
 
 func decrypt(src []byte, out string) (err error) {
-	key, err := getPwd()
+	key, err := getPwd(nil)
 	if err != nil {
 		return
 	}
@@ -339,7 +304,7 @@ func read(in string) (src []byte, err error) {
 	return src, nil
 }
 
-func getPwd() ([]byte, error) {
+func getPwd(salt []byte) (pwd []byte, err error) {
 	interfaces, err := net.Interfaces()
 	var mac []byte
 	if err == nil {
@@ -353,23 +318,63 @@ func getPwd() ([]byte, error) {
 
 	n, err := os.Hostname()
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	bits := append(mac, n...)
 
-	salt, err := getSalt()
-	if err != nil {
-		return nil, err
+	if salt == nil || len(salt) == 0 {
+		salt, err = getSalt()
+		if err != nil {
+			return
+		}
 	}
 
 	h := sha256.New()
-	h.Write(bits)
+	_, err = h.Write(bits)
+	if err != nil {
+		return
+	}
+
 	hash := h.Sum(salt)
 
 	e := base64.NewEncoding(encodeStr)
-	pwd := make([]byte, e.EncodedLen(len(hash)))
-	e.Encode(pwd, hash)
+	b64 := make([]byte, e.EncodedLen(len(hash)))
+	e.Encode(b64, hash)
 
-	return pwd[:32], nil
+	return b64[:32], nil
 }
+
+func getSalt() (salt []byte, err error) {
+	root, err := getConfigPath()
+	if err != nil {
+		return
+	}
+
+	ePath := path.Join(*root, encKey)
+	buf, err := ioutil.ReadFile(ePath)
+	if err != nil {
+		return
+	}
+
+	pwdc, err := base64.StdEncoding.DecodeString(string(buf))
+	if err != nil {
+		return
+	}
+
+	pkPath := path.Join(*root, prvKey)
+	bits, err := ioutil.ReadFile(pkPath)
+	if err != nil {
+		return
+	}
+
+	pk, err := bytesToPK(bits)
+	if err != nil {
+		return
+	}
+
+	return rsa.DecryptOAEP(sha512.New(), rand.Reader, pk, pwdc, nil)
+}
+
+// <3kKXytj9dt?<*W8t84>0P0&>EqX}I0I
+// SM7Bt7tW2b5{f[2:,4,tzg@,HLNa72L;
