@@ -36,7 +36,7 @@ You can run the init as many times as you want.  Just remember that you need to 
 
 ### Encrypt a File
 
-To encrypt a file, you simply pipe in the file path, set the action flag to `--encrypt`, and provide an output file path and name: `kryptr --in=pirate.txt -o=pirate.x --encrypt`
+To encrypt a file, you simply path to the file to be encrypted, set the action flag to `--encrypt`, and provide an output file path and name: `kryptr --in=pirate.txt -o=pirate.x --encrypt`.  **_This action will automatically delete the unencrypted version_**.
 
 ### Decrypt a File
 
